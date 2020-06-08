@@ -3,25 +3,12 @@ const io = require('socket.io')(http);
 const port = 3005;
 const config = require("config");
 const encrypt = require('socket.io-encrypt')
-const { spawn } = require("child_process"),
-    rsaWrapper = require('./rsa/rsa-wrapper'),
-    fs = require('fs');
+const { spawn } = require("child_process");
+const rsaWrapper = require('./rsa/rsaWrapper');
 io.use(encrypt(config.get('secret')));
 
 io.on('connection', (socket) => {
     console.log(socket.id, "Connected");
-
-    let encrypted = rsaWrapper.encrypt(
-        fs.readFileSync(`${__dirname}/rsa/keys/client.public.pem`),
-        `Hello RSA message from client to server`);
-    socket.emit(`rsa server encrypted message`, encrypted);
-    // Also add a handler for received encrypted RSA message from a client:
-    // Test accepting dummy RSA message from client
-    socket.on(`rsa client encrypted message`, function (data) {
-        console.log(`Server received RSA message from client`);
-        console.log(`Encrypted message is`, `\n`, data);
-        console.log(`Decrypted message`, `\n`, rsaWrapper.decrypt(rsaWrapper.serverPrivate, data));
-    });
     let events = [];
     socket.on('message', (evt) => {
         //PriorityQueue
@@ -75,5 +62,5 @@ io.on('connection', (socket) => {
 io.on('disconnect', (evt) => {
     console.log('disconnected')
 });
-
+rsaWrapper.generateKeys();
 http.listen(port, () => console.log(`server listening on port: ${port}`))

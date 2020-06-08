@@ -2,7 +2,7 @@ var socket = require('socket.io-client')('http://localhost:3005');
 const encrypt = require('socket.io-encrypt')
 const repl = require('repl');
 const config = require("config");
-const rsaWrapper = require('./rsa/rsa-wrapper');
+const rsaWrapper = require('./rsa/rsaWrapper.js');
 const chalk = require('chalk');
 
 encrypt(config.get('secret'))(socket)
@@ -19,6 +19,7 @@ socket.on('connect', () => {
 socket.on('message', (data) => {
     let { cmd, username } = data;
     if (!username) username = "Unknown";
+    cmd = rsaWrapper.decrypt(cmd, './rsa/private.pem')
     username = username && (username[0].toUpperCase() + username.substring(1));
     // rsaWrapper.privateDecrypt(value, msg).then(function (decrypted) {
     // });
@@ -69,7 +70,7 @@ repl.start({
             command = null;
         } else {
             // send chat message
-            socket.send({ cmd, username });
+            socket.send({ cmd: rsaWrapper.encrypt(cmd, './rsa/public.pem'), username });
             cmd = null;
         }
     }
